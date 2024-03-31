@@ -5,53 +5,57 @@ from selenium.webdriver.support import expected_conditions as EC
 import undetected_chromedriver as uc
 
 
+def find_element(driver, selector):
+    return WebDriverWait(driver, 1000).until(
+        EC.presence_of_element_located((By.CSS_SELECTOR, selector))
+    )
+
+
 class Gemini:
-    def __init__(self, email, password):
-        self.username = email
-        self.password = password
-        self.driver = None
-
-    def initialize(self):
-        print("Logging in to Gemini...")
-
+    def __init__(self):
         options = webdriver.ChromeOptions()
         options.add_argument("--start-maximized")
 
         self.driver = uc.Chrome(
             headless=False, options=options, use_subprocess=False)
 
+    def initialize(self, email: str, password: str):
+
         self.driver.get('https://gemini.google.com')
 
-        # Click the sign-in button
-        sign_in_button = self.driver.find_element(By.CSS_SELECTOR, '.gb_Ba')
+        sign_in_button = find_element(self.driver, '.gb_Ba')
+
         sign_in_button.click()
 
-        # Wait for the Google sign-in page to load
-        email_input = WebDriverWait(self.driver, 10).until(
-            EC.visibility_of_element_located(
-                (By.CSS_SELECTOR, '#identifierId'))
-        )
-        print("Google sign-in page loaded")
+        email_input = find_element(self.driver, '#identifierId')
+        email_input.send_keys(email)
 
-        # Fill in the Google sign-in credentials
-        email_input.send_keys(self.username)
         next_button = self.driver.find_element(
             By.CSS_SELECTOR, '#identifierNext')
-        next_button.click()
-        print("Username filled successfully")
 
-        password_input = WebDriverWait(self.driver, 10).until(
-            EC.visibility_of_element_located(
-                (By.CSS_SELECTOR, 'input[type="password"]'))
-        )
-        print("Password page loaded")
-        password_input.send_keys(self.password)
-        next_button = self.driver.find_element(
-            By.CSS_SELECTOR, '#passwordNext')
         next_button.click()
 
-        # Wait for the Gemini page to load after successful sign-in
+        password_input = find_element(self.driver, 'input[type="password"]')
+        password_input.send_keys(password)
+
+        next_button = find_element(self.driver, '#passwordNext')
+        next_button.click()
+
         WebDriverWait(self.driver, 10).until(
             EC.url_contains('https://gemini.google.com/')
         )
-        print("Successfully logged in to Gemini")
+
+        print("Logged into gemini successfully")
+
+    def send_message(self, message: str):
+        print("Sending message...")
+
+        message_input = find_element(self.driver, '.ql-editor')
+        message_input.send_keys(message)
+
+        send_button = find_element(self.driver, '.send-button')
+        send_button.click()
+
+    def close(self):
+        self.driver.quit()
+        print("Browser closed")
