@@ -10,6 +10,7 @@ from bs4 import BeautifulSoup
 import time
 import markdownify
 
+
 def find_element(driver, selector):
     return WebDriverWait(driver, 1000).until(
         EC.presence_of_element_located((By.CSS_SELECTOR, selector))
@@ -69,20 +70,23 @@ class Gemini:
         send_button.click()
 
         # Wait for the content to fully load
-        msg_locator = (By.XPATH, "//div[@class='markdown markdown-main-panel']")
-        WebDriverWait(self.driver, 60).until(WaitUntilContentLoads(msg_locator, timeout=60))
-        
+        msg_locator = (
+            By.XPATH, "//div[@class='markdown markdown-main-panel']")
+        WebDriverWait(self.driver, 60).until(
+            WaitUntilContentLoads(msg_locator, timeout=60))
+
         time.sleep(30)
-        
+
         # After the custom wait, directly retrieve and process the container's content
         container_element = self.driver.find_element(*msg_locator)
         container_html = container_element.get_attribute('innerHTML')
 
         # Use BeautifulSoup to parse and process the HTML content
         soup = BeautifulSoup(container_html, 'html.parser')
-        
+
         # Optional: Convert HTML to Markdown (if needed)
-        markdown_text = markdownify.markdownify(soup.prettify(), heading_style="ATX")
+        markdown_text = markdownify.markdownify(
+            soup.prettify(), heading_style="ATX")
         print(markdown_text)
 
         return markdown_text
