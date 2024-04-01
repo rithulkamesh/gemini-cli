@@ -3,6 +3,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import undetected_chromedriver as uc
+from selenium.webdriver.common.action_chains import ActionChains
 
 
 def find_element(driver, selector):
@@ -30,12 +31,16 @@ class Gemini:
         email_input = find_element(self.driver, '#identifierId')
         email_input.send_keys(email)
 
-        next_button = self.driver.find_element(
-            By.CSS_SELECTOR, '#identifierNext')
+        next_button = find_element(
+            self.driver, '#identifierNext')
+        self.driver.implicitly_wait(3)
 
-        next_button.click()
+        ActionChains(self.driver).move_to_element(
+            next_button).click(next_button).perform()
 
-        password_input = find_element(self.driver, 'input[type="password"]')
+        password_input = find_element(
+            self.driver, '#password > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > input:nth-child(1)')
+        self.driver.implicitly_wait(3)
         password_input.send_keys(password)
 
         next_button = find_element(self.driver, '#passwordNext')
@@ -52,6 +57,8 @@ class Gemini:
 
         message_input = find_element(self.driver, '.ql-editor')
         message_input.send_keys(message)
+
+        self.driver.implicitly_wait(3)
 
         send_button = find_element(self.driver, '.send-button')
         send_button.click()
