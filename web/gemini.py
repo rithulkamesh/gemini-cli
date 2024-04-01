@@ -5,10 +5,10 @@ from selenium.webdriver.support import expected_conditions as EC
 import undetected_chromedriver as uc
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
-from web.conditions import MessageGenerationComplete
+from web.conditions import WaitUntilContentLoads
 from bs4 import BeautifulSoup
 import time
-
+import markdownify
 
 def find_element(driver, selector):
     return WebDriverWait(driver, 1000).until(
@@ -60,26 +60,32 @@ class Gemini:
         print("Sending message...")
 
         message_input = find_element(self.driver, '.ql-editor')
+        message_input.clear()
         message_input.send_keys(message)
 
-        time.sleep(1)
+        time.sleep(1)  # Give a brief moment for the input to be fully entered.
 
         send_button = find_element(self.driver, '.send-button')
         send_button.click()
 
-        msg_locator = (
-            By.XPATH, "//div[@class='markdown markdown-main-panel']")
+        # Wait for the content to fully load
+        msg_locator = (By.XPATH, "//div[@class='markdown markdown-main-panel']")
+        WebDriverWait(self.driver, 60).until(WaitUntilContentLoads(msg_locator, timeout=60))
+        
+        time.sleep(30)
+        
+        # After the custom wait, directly retrieve and process the container's content
+        container_element = self.driver.find_element(*msg_locator)
+        container_html = container_element.get_attribute('innerHTML')
 
-        msg_ele = WebDriverWait(self.driver, 30).until(
-            EC.presence_of_element_located(msg_locator)
-        )
-        msg_ele = WebDriverWait(self.driver, 60, 2).until(
-            MessageGenerationComplete(
-                msg_locator, timeout=60)
-        )
+        # Use BeautifulSoup to parse and process the HTML content
+        soup = BeautifulSoup(container_html, 'html.parser')
+        
+        # Optional: Convert HTML to Markdown (if needed)
+        markdown_text = markdownify.markdownify(soup.prettify(), heading_style="ATX")
+        print(markdown_text)
 
-        html_elements = msg_ele.find_elements(By.XPATH, r".//*")
-        print(html_elements)
+        return markdown_text
 
     def close(self):
         self.driver.quit()

@@ -1,40 +1,46 @@
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+from selenium import webdriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.common.exceptions import TimeoutException
+import time
 
 
-class MessageGenerationComplete(object):
-    def __init__(self, locator, timeout=30):
+class WaitUntilContentLoads:
+    def __init__(self, locator, timeout=30, stability_time=3):
+        """
+        :param locator: Locator for the content container.
+        :param timeout: How long to wait in total (seconds).
+        :param stability_time: How long the DOM should stay unchanged to assume loading is done (seconds).
+        """
         self.locator = locator
         self.timeout = timeout
+        self.stability_time = stability_time
 
     def __call__(self, driver):
-        element = driver.find_element(*self.locator)
+        end_time = time.time() + self.timeout
+        last_snapshot = None
+        stable_since = None
+        
+        while time.time() < end_time:
+            try:
+                element = driver.find_element(*self.locator)
+                current_snapshot = element.get_attribute('innerHTML')
+                
+                if current_snapshot == last_snapshot:
+                    # If the DOM hasn't changed, check if it's been stable long enough
+                    if stable_since is None:
+                        stable_since = time.time()  # Start the stability timer
+                    elif time.time() - stable_since >= self.stability_time:
+                        return True  # DOM is stable
+                else:
+                    last_snapshot = current_snapshot
+                    stable_since = None  # Reset the timer if the DOM has changed
+                
+                # Wait a bit before checking again
+                time.sleep(1)
+            except:
+                # If there's an error (e.g., element not found), retry after a short pause.
+                time.sleep(1)
+                continue
 
-        def is_generation_complete(driver):
-            script = """
-                const element = arguments[0];
-                const observer = new MutationObserver(function(mutations) {
-                    mutations.forEach(function(mutation) {
-                        if (mutation.addedNodes.length || mutation.removedNodes.length) {
-                            window.generation_complete = false;
-                        }
-                    });
-                });
-
-                observer.observe(element, { childList: true, subtree: true });
-
-                setTimeout(function() {
-                    window.generation_complete = true;
-                    observer.disconnect();
-                }, 500);
-
-                return window.generation_complete;
-            """
-            return driver.execute_script(script, element)
-
-        try:
-            WebDriverWait(driver, self.timeout).until(is_generation_complete)
-            return element
-        except:
-            return False
+        raise TimeoutException("The DOM did not stabilize within the allotted time.")
