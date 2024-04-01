@@ -13,7 +13,7 @@ async def main():
         return
 
     g.initialize(config["EMAIL"], config["PASSWORD"])
-    g.send_message("Hello, world!")
+    g.send_message("Give me a sample markdown example")
     time.sleep(5)
 
 if __name__ == "__main__":

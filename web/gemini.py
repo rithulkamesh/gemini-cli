@@ -4,6 +4,8 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import undetected_chromedriver as uc
 from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.common.by import By
+from web.conditions import MessageGenerationComplete
 
 
 def find_element(driver, selector):
@@ -62,6 +64,25 @@ class Gemini:
 
         send_button = find_element(self.driver, '.send-button')
         send_button.click()
+
+        msg_locator = (
+            By.XPATH, "//div[@class='markdown markdown-main-panel']")
+        msg_ele = WebDriverWait(self.driver, 30).until(
+            EC.presence_of_element_located(msg_locator)
+        )
+
+        msg_ele = WebDriverWait(self.driver, 60, 2).until(
+            MessageGenerationComplete(
+                msg_locator, timeout=60, poll_frequency=2)
+        )
+
+        html_elements = msg_ele.find_elements(By.XPATH, r".//*")
+        print(html_elements)
+        message_contents = [elem.get_attribute(
+            "outerHTML") for elem in html_elements]
+
+        with open("message.html", "w") as f:
+            f.write("".join(message_contents))
 
     def close(self):
         self.driver.quit()
